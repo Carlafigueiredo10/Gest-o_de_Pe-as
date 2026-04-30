@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏭 Sistema de Gestão de Peças</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #1f2937;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  header {
+    text-align: center;
+    color: white;
+    margin-bottom: 24px;
+  }
+  header h1 {
+    font-size: 2rem;
+    margin-bottom: 6px;
+  }
+  header p {
+    opacity: 0.85;
+    font-size: 0.95rem;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .stat-card .label {
+    font-size: 0.8rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .stat-card .value {
+    font-size: 1.8rem;
+    font-weight: bold;
+  }
+  .stat-card.approved .value { color: #16a34a; }
+  .stat-card.rejected .value { color: #dc2626; }
+  .stat-card.boxes .value { color: #2563eb; }
+  .stat-card.rate .value { color: #ea580c; }
+
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .card h2 {
+    font-size: 1.2rem;
+    margin-bottom: 14px;
+    color: #1e3a8a;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 8px;
+  }
+  form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    align-items: end;
+  }
+  .field { display: flex; flex-direction: column; }
+  .field label {
+    font-size: 0.85rem;
+    color: #4b5563;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .field input, .field select {
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  }
+  button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover { background: #1d4ed8; }
+  button.secondary {
+    background: #6b7280;
+  }
+  button.secondary:hover { background: #4b5563; }
+  button.danger {
+    background: #dc2626;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  button.danger:hover { background: #b91c1c; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .tab {
+    padding: 10px 16px;
+    background: transparent;
+    color: #6b7280;
+    border-radius: 6px 6px 0 0;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+  }
+  .tab:hover { color: #1e3a8a; background: #f3f4f6; }
+  .tab.active {
+    color: #1e3a8a;
+    background: #dbeafe;
+    border-bottom: 2px solid #2563eb;
+    margin-bottom: -2px;
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .piece-item, .box-item {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .piece-item.approved { border-left: 4px solid #16a34a; }
+  .piece-item.rejected { border-left: 4px solid #dc2626; }
+  .piece-info { flex: 1; }
+  .piece-info strong { color: #1e3a8a; }
+  .piece-info .details {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+  .piece-info .reasons {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #dc2626;
+  }
+  .piece-info .reasons li { margin-left: 18px; }
+
+  .box-header {
+    background: #dbeafe;
+    padding: 10px 14px;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+    color: #1e3a8a;
+  }
+  .box-content {
+    border: 1px solid #dbeafe;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 10px 14px;
+  }
+  .box-content .piece-line {
+    padding: 6px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.9rem;
+  }
+  .box-content .piece-line:last-child { border-bottom: none; }
+
+  .empty {
+    text-align: center;
+    color: #9ca3af;
+    padding: 30px;
+    font-style: italic;
+  }
+  .alert {
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    display: none;
+    font-size: 0.9rem;
+  }
+  .alert.success { background: #dcfce7; color: #166534; display: block; }
+  .alert.error { background: #fee2e2; color: #991b1b; display: block; }
+  .alert.info { background: #dbeafe; color: #1e40af; display: block; }
+
+  .report pre {
+    background: #f9fafb;
+    padding: 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .actions-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  footer {
+    text-align: center;
+    color: white;
+    opacity: 0.7;
+    font-size: 0.85rem;
+    margin-top: 24px;
+    padding: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>🏭 Sistema de Gestão de Peças</h1>
+    <p>Controle de Qualidade e Armazenamento — Linha de Montagem Industrial</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat-card approved">
+      <div class="label">✅ Aprovadas</div>
+      <div class="value" id="stat-approved">0</div>
+    </div>
+    <div class="stat-card rejected">
+      <div class="label">❌ Reprovadas</div>
+      <div class="value" id="stat-rejected">0</div>
+    </div>
+    <div class="stat-card boxes">
+      <div class="label">📦 Caixas</div>
+      <div class="value" id="stat-boxes">0</div>
+    </div>
+    <div class="stat-card rate">
+      <div class="label">📊 Taxa Aprovação</div>
+      <div class="value" id="stat-rate">0%</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>➕ Cadastrar Nova Peça</h2>
+    <div class="alert" id="alert"></div>
+    <form id="form-peca">
+      <div class="field">
+        <label>ID da peça</label>
+        <input type="text" id="id_peca" placeholder="P001" required>
+      </div>
+      <div class="field">
+        <label>Peso (g)</label>
+        <input type="number" step="0.1" id="peso" placeholder="100" required>
+      </div>
+      <div class="field">
+        <label>Cor</label>
+        <input type="text" id="cor" placeholder="azul" required>
+      </div>
+      <div class="field">
+        <label>Comprimento (cm)</label>
+        <input type="number" step="0.1" id="comprimento" placeholder="15" required>
+      </div>
+      <div class="field">
+        <label style="visibility:hidden">.</label>
+        <button type="submit">Cadastrar</button>
+      </div>
+    </form>
+    <div class="actions-row">
+      <small style="color:#6b7280;">
+        Critérios: peso 95-105g, cor azul/verde, comprimento 10-20cm.
+      </small>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" data-tab="pecas">Peças</button>
+      <button class="tab" data-tab="caixas">Caixas Fechadas</button>
+      <button class="tab" data-tab="relatorio">Relatório</button>
+    </div>
+
+    <div class="tab-content active" id="tab-pecas">
+      <h2>Peças Cadastradas</h2>
+      <div id="lista-pecas"></div>
+    </div>
+
+    <div class="tab-content" id="tab-caixas">
+      <h2>Caixas</h2>
+      <div id="lista-caixas"></div>
+    </div>
+
+    <div class="tab-content report" id="tab-relatorio">
+      <h2>Relatório Consolidado</h2>
+      <pre id="relatorio">Cadastre algumas peças primeiro.</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⚙ Controle</h2>
+    <div class="actions-row">
+      <button class="secondary" onclick="exportarJSON()">⬇ Exportar dados (JSON)</button>
+      <button class="danger" onclick="limparTudo()">🗑 Limpar tudo</button>
+    </div>
+  </div>
+
+  <footer>
+    Trabalho de Algoritmos e Lógica de Programação — UniFECAF
+  </footer>
+
+</div>
+
+<script>
+// =====================================================================
+// CONSTANTES (regras de negocio)
+// =====================================================================
+const PESO_MIN = 95.0;
+const PESO_MAX = 105.0;
+const COMPRIMENTO_MIN = 10.0;
+const COMPRIMENTO_MAX = 20.0;
+const CORES_PERMITIDAS = ["azul", "verde"];
+const CAPACIDADE_CAIXA = 10;
+
+// =====================================================================
+// ESTADO (persistido no localStorage)
+// =====================================================================
+let pecas = [];
+let caixasFechadas = [];
+let caixaAtual = [];
+
+function salvar() {
+  localStorage.setItem("gp_pecas", JSON.stringify(pecas));
+  localStorage.setItem("gp_caixasFechadas", JSON.stringify(caixasFechadas));
+  localStorage.setItem("gp_caixaAtual", JSON.stringify(caixaAtual));
+}
+function carregar() {
+  pecas = JSON.parse(localStorage.getItem("gp_pecas") || "[]");
+  caixasFechadas = JSON.parse(localStorage.getItem("gp_caixasFechadas") || "[]");
+  caixaAtual = JSON.parse(localStorage.getItem("gp_caixaAtual") || "[]");
+}
+
+// =====================================================================
+// REGRA DE QUALIDADE
+// =====================================================================
+function avaliarPeca(peso, cor, comprimento) {
+  const motivos = [];
+  if (!(peso >= PESO_MIN && peso <= PESO_MAX)) {
+    motivos.push(`peso fora do intervalo (${peso}g, esperado ${PESO_MIN}-${PESO_MAX}g)`);
+  }
+  if (!CORES_PERMITIDAS.includes(cor.toLowerCase())) {
+    motivos.push(`cor não permitida ('${cor}', esperado ${CORES_PERMITIDAS.join(" ou ")})`);
+  }
+  if (!(comprimento >= COMPRIMENTO_MIN && comprimento <= COMPRIMENTO_MAX)) {
+    motivos.push(`comprimento fora do intervalo (${comprimento}cm, esperado ${COMPRIMENTO_MIN}-${COMPRIMENTO_MAX}cm)`);
+  }
+  return { aprovada: motivos.length === 0, motivos };
+}
+
+// =====================================================================
+// ARMAZENAMENTO EM CAIXAS
+// =====================================================================
+function armazenarEmCaixa(peca) {
+  caixaAtual.push(peca);
+  if (caixaAtual.length >= CAPACIDADE_CAIXA) {
+    caixasFechadas.push(caixaAtual);
+    caixaAtual = [];
+    mostrarAlerta(`📦 Caixa #${caixasFechadas.length} fechada com ${CAPACIDADE_CAIXA} peças. Iniciando nova caixa.`, "info");
+  }
+}
+
+function reorganizarCaixas() {
+  const aprovadas = pecas.filter(p => p.aprovada);
+  caixasFechadas = [];
+  caixaAtual = [];
+  for (const p of aprovadas) {
+    caixaAtual.push(p);
+    if (caixaAtual.length >= CAPACIDADE_CAIXA) {
+      caixasFechadas.push(caixaAtual);
+      caixaAtual = [];
+    }
+  }
+}
+
+// =====================================================================
+// ACOES
+// =====================================================================
+function cadastrarPeca(id, peso, cor, comprimento) {
+  if (pecas.some(p => p.id === id)) {
+    mostrarAlerta(`⚠ Já existe uma peça com o ID '${id}'.`, "error");
+    return;
+  }
+  const { aprovada, motivos } = avaliarPeca(peso, cor, comprimento);
+  const peca = { id, peso, cor: cor.toLowerCase(), comprimento, aprovada, motivos };
+  pecas.push(peca);
+
+  if (aprovada) {
+    armazenarEmCaixa(peca);
+    mostrarAlerta(`✅ Peça '${id}' APROVADA e adicionada à caixa atual.`, "success");
+  } else {
+    mostrarAlerta(`❌ Peça '${id}' REPROVADA: ${motivos.join("; ")}.`, "error");
+  }
+  salvar();
+  renderizar();
+}
+
+function removerPeca(id) {
+  const idx = pecas.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  const eraAprovada = pecas[idx].aprovada;
+  pecas.splice(idx, 1);
+  if (eraAprovada) {
+    reorganizarCaixas();
+    mostrarAlerta(`🗑 Peça '${id}' removida. Caixas reorganizadas.`, "info");
+  } else {
+    mostrarAlerta(`🗑 Peça '${id}' removida.`, "info");
+  }
+  salvar();
+  renderizar();
+}
+
+function limparTudo() {
+  if (!confirm("Apagar todas as peças e caixas? Esta ação não pode ser desfeita.")) return;
+  pecas = [];
+  caixasFechadas = [];
+  caixaAtual = [];
+  salvar();
+  renderizar();
+  mostrarAlerta("Todos os dados foram apagados.", "info");
+}
+
+function exportarJSON() {
+  const dados = { pecas, caixasFechadas, caixaAtual, exportadoEm: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `relatorio-pecas-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// =====================================================================
+// RENDERIZACAO
+// =====================================================================
+function mostrarAlerta(mensagem, tipo) {
+  const alert = document.getElementById("alert");
+  alert.textContent = mensagem;
+  alert.className = `alert ${tipo}`;
+  setTimeout(() => { alert.className = "alert"; alert.textContent = ""; }, 4500);
+}
+
+function renderizarStats() {
+  const aprovadas = pecas.filter(p => p.aprovada).length;
+  const reprovadas = pecas.filter(p => !p.aprovada).length;
+  const totalCaixas = caixasFechadas.length + (caixaAtual.length > 0 ? 1 : 0);
+  const taxa = pecas.length > 0 ? ((aprovadas / pecas.length) * 100).toFixed(1) : "0";
+  document.getElementById("stat-approved").textContent = aprovadas;
+  document.getElementById("stat-rejected").textContent = reprovadas;
+  document.getElementById("stat-boxes").textContent = totalCaixas;
+  document.getElementById("stat-rate").textContent = `${taxa}%`;
+}
+
+function renderizarListaPecas() {
+  const container = document.getElementById("lista-pecas");
+  if (pecas.length === 0) {
+    container.innerHTML = `<div class="empty">Nenhuma peça cadastrada ainda.</div>`;
+    return;
+  }
+  const aprovadas = pecas.filter(p => p.aprovada);
+  const reprovadas = pecas.filter(p => !p.aprovada);
+
+  let html = "";
+  if (aprovadas.length > 0) {
+    html += `<h3 style="color:#16a34a; margin: 8px 0;">✅ Aprovadas (${aprovadas.length})</h3>`;
+    for (const p of aprovadas) html += pecaHTML(p);
+  }
+  if (reprovadas.length > 0) {
+    html += `<h3 style="color:#dc2626; margin: 16px 0 8px;">❌ Reprovadas (${reprovadas.length})</h3>`;
+    for (const p of reprovadas) html += pecaHTML(p);
+  }
+  container.innerHTML = html;
+}
+
+function pecaHTML(p) {
+  const reasons = p.aprovada ? "" :
+    `<ul class="reasons">${p.motivos.map(m => `<li>${m}</li>`).join("")}</ul>`;
+  return `
+    <div class="piece-item ${p.aprovada ? "approved" : "rejected"}">
+      <div class="piece-info">
+        <strong>${p.id}</strong>
+        <div class="details">peso: ${p.peso}g · cor: ${p.cor} · comprimento: ${p.comprimento}cm</div>
+        ${reasons}
+      </div>
+      <button class="danger" onclick="removerPeca('${p.id.replace(/'/g, "\\'")}')">Remover</button>
+    </div>`;
+}
+
+function renderizarCaixas() {
+  const container = document.getElementById("lista-caixas");
+  if (caixasFechadas.length === 0 && caixaAtual.length === 0) {
+    container.innerHTML = `<div class="empty">Nenhuma caixa ainda.</div>`;
+    return;
+  }
+  let html = "";
+  caixasFechadas.forEach((caixa, i) => {
+    html += `
+      <div style="margin-bottom: 14px;">
+        <div class="box-header">📦 Caixa #${i + 1} — ${caixa.length} peças (FECHADA)</div>
+        <div class="box-content">
+          ${caixa.map(p => `<div class="piece-line">${p.id} — ${p.peso}g, ${p.cor}, ${p.comprimento}cm</div>`).join("")}
+        </div>
+      </div>`;
+  });
+  if (caixaAtual.length > 0) {
+    html += `
+      <div style="margin-bottom: 14px;">
+        <div class="box-header" style="background:#fef3c7; color:#92400e;">📋 Caixa em montagem — ${caixaAtual.length}/${CAPACIDADE_CAIXA} peças</div>
+        <div class="box-content">
+          ${caixaAtual.map(p => `<div class="piece-line">${p.id} — ${p.peso}g, ${p.cor}, ${p.comprimento}cm</div>`).join("")}
+        </div>
+      </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderizarRelatorio() {
+  const container = document.getElementById("relatorio");
+  if (pecas.length === 0) {
+    container.textContent = "Cadastre algumas peças primeiro.";
+    return;
+  }
+  const total = pecas.length;
+  const aprovadas = pecas.filter(p => p.aprovada);
+  const reprovadas = pecas.filter(p => !p.aprovada);
+  const totalCaixas = caixasFechadas.length + (caixaAtual.length > 0 ? 1 : 0);
+  const taxa = ((aprovadas.length / total) * 100).toFixed(1);
+
+  let txt = "";
+  txt += "=======================================================\n";
+  txt += "          RELATÓRIO CONSOLIDADO DE PRODUÇÃO\n";
+  txt += "=======================================================\n\n";
+  txt += `Total de peças processadas: ${total}\n`;
+  txt += `  ✅ Aprovadas: ${aprovadas.length}\n`;
+  txt += `  ❌ Reprovadas: ${reprovadas.length}\n`;
+
+  if (reprovadas.length > 0) {
+    const contagem = {};
+    for (const p of reprovadas) {
+      for (const m of p.motivos) {
+        const tipo = m.split("(")[0].trim();
+        contagem[tipo] = (contagem[tipo] || 0) + 1;
+      }
+    }
+    txt += "\nDetalhamento das reprovações:\n";
+    for (const p of reprovadas) {
+      txt += `  - Peça '${p.id}':\n`;
+      for (const m of p.motivos) txt += `      · ${m}\n`;
+    }
+    txt += "\nResumo por tipo de falha:\n";
+    for (const [tipo, qtd] of Object.entries(contagem)) {
+      txt += `  · ${tipo}: ${qtd} ocorrência(s)\n`;
+    }
+  }
+
+  txt += "\nArmazenamento:\n";
+  txt += `  📦 Caixas fechadas: ${caixasFechadas.length}\n`;
+  txt += `  📋 Peças na caixa atual (não fechada): ${caixaAtual.length}/${CAPACIDADE_CAIXA}\n`;
+  txt += `  Total de caixas utilizadas: ${totalCaixas}\n`;
+  txt += `\nTaxa de aprovação: ${taxa}%\n`;
+  txt += "=======================================================\n";
+
+  container.textContent = txt;
+}
+
+function renderizar() {
+  renderizarStats();
+  renderizarListaPecas();
+  renderizarCaixas();
+  renderizarRelatorio();
+}
+
+// =====================================================================
+// EVENTOS
+// =====================================================================
+document.getElementById("form-peca").addEventListener("submit", e => {
+  e.preventDefault();
+  const id = document.getElementById("id_peca").value.trim();
+  const peso = parseFloat(document.getElementById("peso").value);
+  const cor = document.getElementById("cor").value.trim();
+  const comprimento = parseFloat(document.getElementById("comprimento").value);
+  if (!id || !cor || isNaN(peso) || isNaN(comprimento)) {
+    mostrarAlerta("⚠ Preencha todos os campos corretamente.", "error");
+    return;
+  }
+  cadastrarPeca(id, peso, cor, comprimento);
+  e.target.reset();
+  document.getElementById("id_peca").focus();
+});
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(`tab-${tab.dataset.tab}`).classList.add("active");
+  });
+});
+
+// Inicializacao
+carregar();
+renderizar();
+</script>
+</body>
+</html>
